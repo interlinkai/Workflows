@@ -12,7 +12,7 @@ jobs:
     runs-on: windows-2022
     name: Run Tests
     steps:
-      - name: "Start tests"
+      - name: "Start Tests"
         if: ${{ inputs.run_tests == true }}
         run: dotnet test
 

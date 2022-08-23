@@ -20,7 +20,7 @@ jobs:
     runs-on: windows-2022
     name: Run Tests
     steps:
-      - name: "Start tests"
+      - name: "Start Tests"
         if: ${{ inputs.run_tests == true }}
         run: dotnet test
 
@@ -43,10 +43,10 @@ jobs:
           if ( $Env:GITHUB_REF_TYPE -eq "tag" -and $Env:GITHUB_EVENT_NAME -eq "release" ) {
               $SUFFIX=""
           } elseif ( $Env:GITHUB_REF_NAME -eq "main" ) {
-              $SUFFIX = "--version-suffix rc-" + $Env:GITHUB_RUN_NUMBER
+              $SUFFIX = "-Suffix rc-" + $Env:GITHUB_RUN_NUMBER
           } else {
               $CLEAN_BRANCH = $Env:GITHUB_REF_NAME -replace '\s+|_|/', '-'
-              $SUFFIX = "--version-suffix feature" + "-" + $Env:GITHUB_RUN_NUMBER + "-" + $CLEAN_BRANCH 
+              $SUFFIX = "-Suffix feature" + "-" + $Env:GITHUB_RUN_NUMBER + "-" + $CLEAN_BRANCH 
           }
           echo "SUFFIX=$SUFFIX"
           echo "SUFFIX=$SUFFIX" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
@@ -70,7 +70,8 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Restore      
-        run: nuget restore ${{ inputs.solution_name }}
+        run: |
+          nuget restore ${{ inputs.solution_name }}
 
       - name: Build
           # continue-on-error: true
