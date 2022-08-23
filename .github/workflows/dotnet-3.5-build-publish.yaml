@@ -19,10 +19,13 @@ jobs:
     # see https://github.com/actions/virtual-environments/blob/main/images/win/Windows2022-Readme.md
     runs-on: windows-2022
     name: Run Tests
-    if: ${{ inputs.run_tests == true }}
     steps:
       - name: "Start tests"
+        if: ${{ inputs.run_tests == true }}
         run: dotnet test
+
+      - name: "Done Testing"
+        run: echo "done"
         
   build:
     # see https://github.com/actions/virtual-environments/blob/main/images/win/Windows2022-Readme.md
