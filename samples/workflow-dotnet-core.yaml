@@ -11,4 +11,6 @@ on:
 jobs:
   common:
     uses: interlinkai/Workflows/.github/workflows/dotnet-core-build-publish.yaml@main
+    with:
+      run_tests: false
     secrets: inherit 
