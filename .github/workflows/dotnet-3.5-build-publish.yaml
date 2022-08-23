@@ -69,16 +69,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Restore      
+      - name: Restore
+        # continue-on-error: true
         run: |
           nuget restore ${{ inputs.solution_name }}
 
       - name: Build
-          # continue-on-error: true
+        # continue-on-error: true
         run: |
           nuget pack ${{ inputs.project_name }} -IncludeReferencedProjects -Build -OutputDirectory out -Properties Configuration=Release ${{ env.SUFFIX }}
         
       - name: Push Package
-          # continue-on-error: true
+        # continue-on-error: true
         run: |
-          nuget push out\*.nupkg -SkipDuplicate -NoSymbols
+          nuget push out\*.nupkg -NoSymbols
+

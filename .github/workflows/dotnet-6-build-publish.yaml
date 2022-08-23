@@ -1,10 +1,11 @@
 name: .Net 6 - Build and Publish
 on:
   workflow_call:
-    run_tests:
-        required: false
-        type: boolean
-        default: true
+    inputs:
+      run_tests:
+          required: false
+          type: boolean
+          default: true
 
 jobs:
   run-tests:
@@ -23,10 +24,11 @@ jobs:
     # see https://github.com/actions/virtual-environments/blob/main/images/win/Windows2022-Readme.md
     runs-on: windows-2022
     name: Build and publish
-#     needs: [run-tests]
+    needs: [run-tests]
     steps:
       - name: DEBUG env vars
         run: gci env:*
+
       - name: Set env SUFFIX
         shell: pwsh
         run: |
@@ -61,14 +63,17 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Restore
-        #  continue-on-error: true
-        run: dotnet restore
+        # continue-on-error: true
+        run: |
+          dotnet restore
 
       - name: Build
-        #  continue-on-error: true
-        run: dotnet build -o out -p:Configuration=Release -p:Platform="Any CPU" ${{ env.SUFFIX }}
+        # continue-on-error: true
+        run: |
+          dotnet build -o out -p:Configuration=Release -p:Platform="Any CPU" ${{ env.SUFFIX }}
 
       - name: Push Package
         # continue-on-error: true
-        run: nuget push out\*.nupkg -NoSymbols
-        
+        run: |
+          nuget push out\*.nupkg -NoSymbols
+
