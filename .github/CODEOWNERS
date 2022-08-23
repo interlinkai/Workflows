@@ -1,0 +1,4 @@
+# Default access to all files granted to this team
+# Everyone in this team will be auto added to all PRs
+# see https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+* @interlinkai/scripclip

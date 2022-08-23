@@ -1,0 +1,79 @@
+name: .Net 6 - Build and Publish
+on:
+  workflow_call:
+    inputs:
+      run_tests:
+          required: false
+          type: boolean
+          default: true
+
+jobs:
+  run-tests:
+    # see https://github.com/actions/virtual-environments/blob/main/images/win/Windows2022-Readme.md
+    runs-on: windows-2022
+    name: Run Tests
+    steps:
+      - name: "Start Tests"
+        if: ${{ inputs.run_tests == true }}
+        run: dotnet test
+
+      - name: "Done Testing"
+        run: echo "done"
+        
+  build:
+    # see https://github.com/actions/virtual-environments/blob/main/images/win/Windows2022-Readme.md
+    runs-on: windows-2022
+    name: Build and publish
+    needs: [run-tests]
+    steps:
+      - name: DEBUG env vars
+        run: gci env:*
+
+      - name: Set env SUFFIX
+        shell: pwsh
+        run: |
+          $SUFFIX=""
+          if ( $Env:GITHUB_REF_TYPE -eq "tag" -and $Env:GITHUB_EVENT_NAME -eq "release" ) {
+              $SUFFIX=""
+          } elseif ( $Env:GITHUB_REF_NAME -eq "main" ) {
+              $SUFFIX = "--version-suffix rc-" + $Env:GITHUB_RUN_NUMBER
+          } else {
+              $CLEAN_BRANCH = $Env:GITHUB_REF_NAME -replace '\s+|_|/', '-'
+              $SUFFIX = "--version-suffix feature-" + $Env:GITHUB_RUN_NUMBER + "-" + $CLEAN_BRANCH 
+          }
+          echo "SUFFIX=$SUFFIX"
+          echo "SUFFIX=$SUFFIX" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+
+      # TODO Error: Unable to resolve action `interlinkai/secrets@main`, repository not found
+      # might need to move action.yaml to root in secrets repo, not sure
+      #- name: Decrypt ScripClip secrets
+      #  # NOTE: decrypt assumes CI_AGE_PRIVATE_KEY env var is set
+      #  uses: interlinkai/secrets@main
+      #  with:
+      #    PROJECT_NAME: scripclip
+
+      - name: Setup .NET Core @ latest
+        uses: actions/setup-dotnet@v2
+        with:
+          source-url: https://nuget.pkg.github.com/interlinkai/index.json
+        env:
+          NUGET_AUTH_TOKEN: ${{secrets.CI_GH_PACKAGES_PAT}}
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Restore
+        # continue-on-error: true
+        run: |
+          dotnet restore
+
+      - name: Build
+        # continue-on-error: true
+        run: |
+          dotnet build -o out -p:Configuration=Release -p:Platform="Any CPU" ${{ env.SUFFIX }}
+
+      - name: Push Package
+        # continue-on-error: true
+        run: |
+          nuget push out\*.nupkg -NoSymbols
+

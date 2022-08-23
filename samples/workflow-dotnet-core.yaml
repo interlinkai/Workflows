@@ -1,0 +1,16 @@
+name: Test, Build, Publish
+on:
+  push:
+    paths-ignore: 
+      - '**.md'
+      - 'docs/**'
+      - '**.txt'
+  release:
+    types: [published]
+
+jobs:
+  common:
+    uses: interlinkai/Workflows/.github/workflows/dotnet-core-build-publish.yaml@main
+    with:
+      run_tests: false
+    secrets: inherit 
