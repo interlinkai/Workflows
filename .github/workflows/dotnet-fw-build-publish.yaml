@@ -16,16 +16,32 @@ on:
 
 jobs:
   run-tests:
+    # NOTE: tests are a separate job because each job gets its own container.  We do this because 
+    # tests are built in debug mode, and releases are done in release mode. We don't want to accidentally
+    # release debug code, so we keep test and release in separate containers.
+    #
     # see https://github.com/actions/virtual-environments/blob/main/images/win/Windows2022-Readme.md
     runs-on: windows-2022
     name: Run Tests
     steps:
-      - name: "Start Tests"
+      - name: Setup .NET Core @ latest
+        if: ${{ inputs.run_tests == true }}
+        uses: actions/setup-dotnet@v2
+        with:
+          source-url: https://nuget.pkg.github.com/interlinkai/index.json
+        env:
+          NUGET_AUTH_TOKEN: ${{secrets.CI_GH_PACKAGES_PAT}}
+
+      - name: Checkout repository
+        if: ${{ inputs.run_tests == true }}
+        uses: actions/checkout@v3
+
+      - name: "Run Tests"
         if: ${{ inputs.run_tests == true }}
         run: dotnet test
 
       - name: "Done Testing"
-        run: echo "done"
+        run: echo "Done Testing"
         
   build:
     # see https://github.com/actions/virtual-environments/blob/main/images/win/Windows2022-Readme.md
