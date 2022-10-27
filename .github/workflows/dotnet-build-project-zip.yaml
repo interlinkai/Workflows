@@ -1,0 +1,127 @@
+# dotnet-build-project-zip.yaml
+# This builds the specified project, zips the output, and copies the zip file to an S3 bucket
+# the project name should be specified without the suffix ".csproj"
+
+name: InterlinkAi - build and zip
+on:
+  workflow_call:
+    inputs:
+      run_tests:
+          required: false
+          type: boolean
+          default: true
+      project_name:
+          required: true
+          type: string
+
+env:
+  AWS_REGION_DEFAULT: us-west-1 
+  AWS_RELEASE_BUCKET: s3://interlinkai-releases
+
+jobs:
+  run-tests:
+    # NOTE: tests are a separate job because each job gets its own container.  We do this because 
+    # tests are built in debug mode, and releases are done in release mode. We don't want to accidentally
+    # release debug code, so we keep test and release in separate containers.
+    #
+    # see https://github.com/actions/virtual-environments/blob/main/images/win/Windows2022-Readme.md
+    runs-on: windows-2022
+    name: Run Tests
+    steps:
+      - name: Setup .NET Core @ latest
+        if: ${{ inputs.run_tests == true }}
+        uses: actions/setup-dotnet@v2
+        with:
+          source-url: https://nuget.pkg.github.com/interlinkai/index.json
+        env:
+          NUGET_AUTH_TOKEN: ${{secrets.CI_GH_PACKAGES_PAT}}
+
+      - name: Checkout repository
+        if: ${{ inputs.run_tests == true }}
+        uses: actions/checkout@v3
+
+      - name: "Run Tests"
+        if: ${{ inputs.run_tests == true }}
+        run: dotnet test
+
+      - name: "Done Testing"
+        run: echo "Done Testing"
+        
+  build:
+    # see https://github.com/actions/virtual-environments/blob/main/images/win/Windows2022-Readme.md
+    runs-on: windows-2022
+    name: Build and zip
+    needs: [run-tests]
+    steps:
+      - name: DEBUG env vars
+        run: gci env:*
+
+      - name: Set env SUFFIX
+        shell: pwsh
+        run: |
+          $SUFFIX=""
+          if ( $Env:GITHUB_REF_TYPE -eq "tag" -and $Env:GITHUB_EVENT_NAME -eq "release" ) {
+            $SUFFIX = ""
+            $S3PATH = $Env:AWS_RELEASE_BUCKET + "/release/" + $Env:GITHUB_REPOSITORY + "/" + $Env:GITHUB_REF_NAME
+          } elseif ( $Env:GITHUB_REF_NAME -eq "main" ) {
+            $SUFFIX = "--version-suffix rc"
+            $S3PATH = $Env:AWS_RELEASE_BUCKET + "/rc/" + $Env:GITHUB_REPOSITORY + "/" + $Env:GITHUB_RUN_NUMBER
+          } else {
+            $CLEAN_BRANCH = $Env:GITHUB_REF_NAME -replace '\s+|_|/', '-'
+            $SUFFIX = "--version-suffix feature-" + $CLEAN_BRANCH
+            $S3PATH = $Env:AWS_RELEASE_BUCKET + "/feature/" + $Env:GITHUB_REPOSITORY + "/" + $Env:GITHUB_RUN_NUMBER
+          }
+          echo "SUFFIX=$SUFFIX"
+          echo "SUFFIX=$SUFFIX" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "S3PATH=$S3PATH"
+          echo "S3PATH=$S3PATH" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+
+      # TODO Error: Unable to resolve action `interlinkai/secrets@main`, repository not found
+      # might need to move action.yaml to root in secrets repo, not sure
+      #- name: Decrypt ScripClip secrets
+      #  # NOTE: decrypt assumes CI_AGE_PRIVATE_KEY env var is set
+      #  uses: interlinkai/secrets@main
+      #  with:
+      #    PROJECT_NAME: scripclip
+
+      - name: Setup .NET Core @ latest
+        uses: actions/setup-dotnet@v2
+        with:
+          source-url: https://nuget.pkg.github.com/interlinkai/index.json
+        env:
+          NUGET_AUTH_TOKEN: ${{secrets.CI_GH_PACKAGES_PAT}}
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Restore
+        # continue-on-error: true
+        run: |
+          dotnet restore ${{ inputs.release_name }}.csproj
+
+      - name: Build
+        # continue-on-error: true
+        run: |
+          dotnet build ${{ inputs.release_name }}.csproj -o ${{ inputs.release_name }} -p:Configuration=Release -p:Platform="Any CPU" ${{ env.SUFFIX }}
+
+      - name: Copy artifacts and info into release dir
+        run: |
+          Get-ChildItem -Recurse -Path docs | Copy-Item -Destination ${{ inputs.release_name }}/docs
+
+      - name: Zip release dir
+        run: 7z a -tzip ${{ inputs.release_name }}.zip ${{ inputs.release_name }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_00 }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_00 }}
+          aws-region: ${{ env.AWS_REGION_DEFAULT }}
+        
+      - name: Push release to S3
+        run: |
+          gci env:* | Out-File -FilePath github-env.txt -Encoding utf8 -Append
+          aws s3 cp github-env.txt ${{ env.S3PATH }}/github-env.txt
+          # aws s3 cp RELEASE-NOTES.md ${{ env.S3PATH }}/RELEASE-NOTES.md
+          aws s3 cp ${{ inputs.release_name }}.zip ${{ env.S3PATH }}/${{ inputs.release_name }}.zip
+
