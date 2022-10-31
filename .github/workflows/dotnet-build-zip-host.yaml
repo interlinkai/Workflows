@@ -127,5 +127,5 @@ jobs:
             aws s3 cp RELEASE-NOTES.md ${{ env.S3PATH }}/RELEASE-NOTES.md
           fi
           aws s3 cp ${{ inputs.project_name }}.zip ${{ env.S3PATH }}/${{ inputs.project_name }}.zip
-        shell:bash
+        shell: bash
 
