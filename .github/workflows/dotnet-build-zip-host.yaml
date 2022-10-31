@@ -122,10 +122,12 @@ jobs:
         run: |
           gci env:* | Out-File -FilePath github-env.txt -Encoding utf8 -Append
           aws s3 cp github-env.txt ${{ env.S3PATH }}/github-env.txt
+          aws s3 cp ${{ inputs.project_name }}.zip ${{ env.S3PATH }}/${{ inputs.project_name }}.zip
+
+      - name: Push release notes to S3
+        run: |
           if test -f RELEASE-NOTES.md
           then
             aws s3 cp RELEASE-NOTES.md ${{ env.S3PATH }}/RELEASE-NOTES.md
           fi
-          aws s3 cp ${{ inputs.project_name }}.zip ${{ env.S3PATH }}/${{ inputs.project_name }}.zip
         shell: bash
-
