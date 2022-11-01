@@ -103,7 +103,7 @@ jobs:
       - name: Restore using nuget
         if: ${{ inputs.use_nuget_restore == true }}
         run: |
-          nuget restore ${{ inputs.project_name }}.csproj
+          nuget restore ${{ inputs.project_name }}.csproj -PackagesDirectory packages
 
       - name: Restore using dotnet
         if: ${{ inputs.use_nuget_restore == false }}
