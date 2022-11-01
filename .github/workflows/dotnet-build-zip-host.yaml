@@ -13,6 +13,10 @@ on:
       project_name:
           required: true
           type: string
+      use_nuget_restore:
+          required: false
+          type: boolean
+          default: true
 
 env:
   AWS_REGION_DEFAULT: us-west-1 
@@ -94,13 +98,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Restore
-        # continue-on-error: true
+      # dotnet doesn't support packages.config so nuget is the default, but
+      # it's unclear if there is any case where dotnet works but nuget doesn't
+      - name: Restore using nuget
+        if: ${{ inputs.use_nuget_restore == true }}
+        run: |
+          nuget restore ${{ inputs.project_name }}.csproj -PackagesDirectory packages
+
+      - name: Restore using dotnet
+        if: ${{ inputs.use_nuget_restore == false }}
         run: |
           dotnet restore ${{ inputs.project_name }}.csproj
 
       - name: Build
-        # continue-on-error: true
         run: |
           dotnet build ${{ inputs.project_name }}.csproj -o ${{ inputs.project_name }} -p:Configuration=Release -p:Platform="Any CPU" ${{ env.SUFFIX }}
 
