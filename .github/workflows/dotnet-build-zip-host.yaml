@@ -107,6 +107,7 @@ jobs:
           if: ${{ inputs.use_nuget_restore == true }}
           run: |
             nuget restore ${{ inputs.project_name }}.csproj
+
         -name: Restore using dotnet
           # continue-on-error: true
           if: ${{ inputs.use_nuget_restore == false }}
