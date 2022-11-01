@@ -100,22 +100,17 @@ jobs:
 
       # dotnet doesn't support packages.config so nuget is the default, but
       # it's unclear if there is any case where dotnet works but nuget doesn't
-      #- name: Restore
-      #  steps:
       - name: Restore using nuget
-      # continue-on-error: true
-      if: ${{ inputs.use_nuget_restore == true }}
-      run: |
-        nuget restore ${{ inputs.project_name }}.csproj
+        if: ${{ inputs.use_nuget_restore == true }}
+        run: |
+          nuget restore ${{ inputs.project_name }}.csproj
 
       - name: Restore using dotnet
-      # continue-on-error: true
-      if: ${{ inputs.use_nuget_restore == false }}
-      run: |
-        dotnet restore ${{ inputs.project_name }}.csproj
+        if: ${{ inputs.use_nuget_restore == false }}
+        run: |
+          dotnet restore ${{ inputs.project_name }}.csproj
 
       - name: Build
-        # continue-on-error: true
         run: |
           dotnet build ${{ inputs.project_name }}.csproj -o ${{ inputs.project_name }} -p:Configuration=Release -p:Platform="Any CPU" ${{ env.SUFFIX }}
 
