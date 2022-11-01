@@ -98,21 +98,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Restore
-        # dotnet doesn't support packages.config so nuget is the default, but
-        # it's unclear if there is any case where dotnet works but nuget doesn't
-        steps:
-        -name: Restore using nuget
-          # continue-on-error: true
-          if: ${{ inputs.use_nuget_restore == true }}
-          run: |
-            nuget restore ${{ inputs.project_name }}.csproj
+      # dotnet doesn't support packages.config so nuget is the default, but
+      # it's unclear if there is any case where dotnet works but nuget doesn't
+      #- name: Restore
+      #   steps:
+      -name: Restore using nuget
+        # continue-on-error: true
+        if: ${{ inputs.use_nuget_restore == true }}
+        run: |
+          nuget restore ${{ inputs.project_name }}.csproj
 
-        -name: Restore using dotnet
-          # continue-on-error: true
-          if: ${{ inputs.use_nuget_restore == false }}
-          run: |
-            dotnet restore ${{ inputs.project_name }}.csproj
+      -name: Restore using dotnet
+        # continue-on-error: true
+        if: ${{ inputs.use_nuget_restore == false }}
+        run: |
+          dotnet restore ${{ inputs.project_name }}.csproj
 
       - name: Build
         # continue-on-error: true
