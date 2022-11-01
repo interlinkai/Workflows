@@ -103,13 +103,13 @@ jobs:
         # it's unclear if there is any case where dotnet works but nuget doesn't
         steps:
         -name: Restore using nuget
-          if: ${{ inputs.use_nuget_restore == true }}
           # continue-on-error: true
+          if: ${{ inputs.use_nuget_restore == true }}
           run: |
             nuget restore ${{ inputs.project_name }}.csproj
         -name: Restore using dotnet
-          if: ${{ inputs.use_nuget_restore == false }}
           # continue-on-error: true
+          if: ${{ inputs.use_nuget_restore == false }}
           run: |
             dotnet restore ${{ inputs.project_name }}.csproj
 
